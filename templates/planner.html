@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --ios-glass: rgba(255, 255, 255, 0.4);
+        --accent-blue: #0071e3;
+        --accent-green: #34c759;
+        --accent-purple: #af52de;
+    }
+
+    .planner-container { max-width: 900px; margin: 40px auto; animation: fadeIn 0.8s ease-out; }
+
+    /* --- Integrated Form Styling --- */
+    .glass-form-wrapper {
+        background: var(--ios-glass);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border-radius: 35px;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        padding: 45px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.04);
+    }
+
+    /* --- Highlighted Input Boxes --- */
+    .input-box-wrapper {
+        position: relative;
+        margin-bottom: 30px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 22px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Coloring the Labels with Semi-Transparent Highlighting */
+    .label-highlight {
+        display: inline-block;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 4px 12px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+    }
+
+    .highlight-blue { background: rgba(0, 113, 227, 0.15); color: var(--accent-blue); }
+    .highlight-green { background: rgba(52, 199, 89, 0.15); color: var(--accent-green); }
+    .highlight-purple { background: rgba(175, 82, 222, 0.15); color: var(--accent-purple); }
+
+    .minimal-input {
+        background: transparent;
+        border: none;
+        width: 100%;
+        font-size: 1.1rem;
+        color: #1d1d1f;
+        outline: none;
+        padding: 5px;
+    }
+
+    /* Focus States for the Boxes */
+    .input-box-wrapper:focus-within {
+        background: rgba(255, 255, 255, 0.8);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        border-color: rgba(255, 255, 255, 0.8);
+    }
+
+    .number-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    .btn-aesthetic {
+        background: var(--accent-blue);
+        color: white;
+        border: none;
+        padding: 18px;
+        border-radius: 20px;
+        font-weight: 700;
+        width: 100%;
+        transition: all 0.4s ease;
+    }
+
+    .btn-aesthetic:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0, 113, 227, 0.3); }
+
+    /* Result Panel */
+    .aesthetic-result { margin-top: 60px; padding: 40px; background: white; border-radius: 35px; box-shadow: 0 30px 60px rgba(0,0,0,0.06); }
+
+    @media print {
+        .no-print { display: none !important; }
+        body * { visibility: hidden; }
+        #printablePlan, #printablePlan * { visibility: visible; }
+        #printablePlan { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<div class="planner-container">
+    <div class="text-center mb-5 no-print">
+        <h1 class="fw-bold" style="font-size: 3rem; letter-spacing: -2px;">Study Roadmap</h1>
+        <p class="text-muted">Personalized planning for <strong>your exam</strong></p>
+    </div>
+
+    <div class="glass-form-wrapper no-print">
+        <form method="POST">
+            <div class="input-box-wrapper">
+                <span class="label-highlight highlight-blue">Subject List</span>
+                <textarea class="minimal-input" name="subjects" rows="2" 
+                          placeholder="e.g. Botany, Zoology, Chemistry" required></textarea>
+            </div>
+
+            <div class="number-grid">
+                <div class="input-box-wrapper">
+                    <span class="label-highlight highlight-green">Hours / Day</span>
+                    <input type="number" class="minimal-input" name="hours" 
+                           min="1" max="12" value="4" required>
+                </div>
+                <div class="input-box-wrapper">
+                    <span class="label-highlight highlight-purple">Total Days</span>
+                    <input type="number" class="minimal-input" name="days" 
+                           min="1" max="30" value="7" required>
+                </div>
+            </div>
+
+            <div class="input-box-wrapper">
+                <span class="label-highlight highlight-blue">Key Deadline</span>
+                <input type="text" class="minimal-input" name="deadline" 
+                       placeholder="e.g. Final Exams May 15">
+            </div>
+
+            <button type="submit" class="btn-aesthetic">Generate Smart Plan</button>
+        </form>
+    </div>
+
+    {% if plan %}
+    <div class="aesthetic-result" id="printablePlan">
+        <h2 class="fw-bold mb-4">Study Strategy</h2>
+        <div style="white-space: pre-wrap; font-size: 1.1rem; line-height: 1.8;">{{ plan }}</div>
+        <div class="mt-4 pt-4 border-top d-flex justify-content-between align-items-center no-print">
+            <small class="text-muted">Developed by Arslan Daim</small>
+            <button class="btn btn-link text-decoration-none fw-bold" onclick="window.print()">Export Clean PDF</button>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

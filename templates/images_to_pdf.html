@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --deep-purple: #6f42c1;
+        --electric-purple: #af52de;
+        --soft-teal: #e0f7fa;
+    }
+
+    .converter-card {
+        max-width: 650px;
+        margin: 60px auto;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 32px;
+        padding: 45px;
+        box-shadow: 0 15px 35px rgba(111, 66, 193, 0.1);
+        border: 2px solid #fff;
+        backdrop-filter: blur(10px);
+    }
+
+    .gradient-header {
+        background: linear-gradient(90deg, var(--deep-purple), var(--electric-purple));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+    }
+
+    .upload-zone {
+        border: 3px dashed #e0e0e0;
+        border-radius: 24px;
+        padding: 50px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        background: #fafafa;
+    }
+
+    .upload-zone:hover {
+        border-color: var(--electric-purple);
+        background: #fdfaff;
+        transform: translateY(-2px);
+    }
+
+    /* Format Selection Toggles */
+    .format-selector {
+        display: flex;
+        gap: 15px;
+        margin: 25px 0;
+    }
+
+    .format-option {
+        flex: 1;
+        position: relative;
+    }
+
+    .format-option input {
+        display: none;
+    }
+
+    .format-label {
+        display: block;
+        padding: 15px;
+        text-align: center;
+        background: #f0f0f5;
+        border-radius: 18px;
+        cursor: pointer;
+        font-weight: 700;
+        transition: 0.3s;
+        border: 2px solid transparent;
+        color: #636366;
+    }
+
+    .format-option input:checked + .format-label {
+        background: white;
+        border-color: var(--deep-purple);
+        color: var(--deep-purple);
+        box-shadow: 0 8px 15px rgba(111, 66, 193, 0.15);
+    }
+
+    .btn-generate {
+        background: linear-gradient(135deg, var(--deep-purple), var(--electric-purple));
+        color: white;
+        border: none;
+        padding: 18px;
+        border-radius: 20px;
+        font-weight: 800;
+        width: 100%;
+        margin-top: 10px;
+        transition: 0.3s;
+        box-shadow: 0 10px 20px rgba(111, 66, 193, 0.2);
+    }
+
+    .btn-generate:hover:not(:disabled) {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(111, 66, 193, 0.4);
+    }
+
+    .btn-generate:disabled {
+        background: #d1d1d6;
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+
+    #preview-text {
+        font-size: 1rem;
+        color: var(--deep-purple);
+        margin-top: 15px;
+        font-weight: 600;
+    }
+</style>
+
+<div class="container">
+    <div class="converter-card">
+        <div class="text-center mb-4">
+            <h2 class="gradient-header display-6">Slide & Document Creator</h2>
+            <p class="text-muted">Convert your study images into professional PDFs or PowerPoints.</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" id="converterForm">
+            <!-- Image Upload -->
+            <label for="images" class="upload-zone d-block">
+                <div class="display-4 mb-2">📸</div>
+                <h5 class="fw-bold">Select Photos</h5>
+                <p class="text-muted small">Upload your note captures (JPG, PNG)</p>
+                <input type="file" name="images" id="images" multiple hidden accept="image/*" onchange="updateUI()">
+            </label>
+
+            <div id="preview-text" class="text-center"></div>
+
+            <!-- Format Toggle -->
+            <div class="mt-4">
+                <label class="fw-bold small text-uppercase text-muted mb-2 d-block">Choose Output Format</label>
+                <div class="format-selector">
+                    <div class="format-option">
+                        <input type="radio" name="format" id="pdf" value="pdf" checked>
+                        <label for="pdf" class="format-label">
+                            📄 PDF Document
+                        </label>
+                    </div>
+                    <div class="format-option">
+                        <input type="radio" name="format" id="ppt" value="ppt">
+                        <label for="ppt" class="format-label">
+                            📊 PowerPoint
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-generate" id="genBtn" disabled>
+                Generate & Download
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function updateUI() {
+        const input = document.getElementById('images');
+        const btn = document.getElementById('genBtn');
+        const text = document.getElementById('preview-text');
+        const count = input.files.length;
+        
+        if (count > 0) {
+            text.innerHTML = `✨ ${count} images ready for conversion`;
+            btn.disabled = false;
+            btn.innerHTML = "Generate & Download"; // Reset text if files changed
+        } else {
+            text.innerHTML = "";
+            btn.disabled = true;
+        }
+    }
+
+    // Visual feedback on submit
+    document.getElementById('converterForm').onsubmit = function() {
+        const btn = document.getElementById('genBtn');
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Processing Files...`;
+        
+        // Reset the button after a delay so it doesn't get stuck
+        // This triggers when the browser handles the file download response
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = "Generate & Download";
+        }, 5000); 
+    };
+</script>
+{% endblock %}

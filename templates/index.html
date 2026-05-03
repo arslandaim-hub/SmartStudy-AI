@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --text-dark: #1d1d1f;
+        --accent-blue: #0071e3;
+        --glass-gold: rgba(255, 159, 10, 0.12);
+        --glass-blue: rgba(0, 113, 227, 0.12);
+        --glass-green: rgba(52, 199, 89, 0.12);
+        --glass-purple: rgba(175, 82, 222, 0.12); 
+        --broq-purple: #6f42c1;
+        --shadow-soft: 0 8px 30px rgba(0,0,0,0.04);
+    }
+
+    /* Floating Journal Card */
+    .journal-float {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(111, 66, 193, 0.2);
+        border-radius: 20px;
+        padding: 12px 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: var(--text-dark);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        animation: slideUp 0.6s ease-out;
+    }
+
+    .journal-float:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(111, 66, 193, 0.15);
+        background: #fff;
+    }
+
+    .journal-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--broq-purple);
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Auth Navigation - Tucked further into the corner */
+    .auth-nav {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 100;
+    }
+
+    .user-dropdown {
+        background: var(--broq-purple);
+        border: none;
+        border-radius: 50px; 
+        padding: 6px; 
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.3s;
+        box-shadow: 0 10px 25px rgba(111, 66, 193, 0.25);
+        cursor: pointer;
+    }
+
+    .user-dropdown:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(111, 66, 193, 0.35);
+        color: white;
+    }
+
+    /* Ensure dropdown alignment */
+    .dropdown-menu-end {
+        right: 0;
+        left: auto;
+    }
+
+    .hero-container { 
+        padding: 40px 20px; 
+        max-width: 1300px; 
+        margin: 0 auto; 
+        animation: fadeIn 0.8s ease-out; 
+        position: relative;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .welcome-text { 
+        margin-bottom: 40px; 
+        text-align: left; 
+    }
+    
+    .welcome-text h1 { font-size: 2.5rem; font-weight: 800; color: var(--text-dark); letter-spacing: -1px; line-height: 1.2; margin: 0; }
+    .welcome-text h1 span { background: linear-gradient(135deg, #af52de, #6f42c1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    .main-grid { display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 60px; }
+    .showcase-section { display: flex; flex-direction: column; gap: 20px; }
+    .tool-row { display: flex; flex-direction: column; gap: 12px; width: 100%; position: relative; }
+    .feature-highlight { flex-grow: 1; border-radius: 20px; padding: 20px; border: 1px solid rgba(0, 0, 0, 0.05); text-decoration: none; color: inherit; background: #fff; transition: 0.3s; }
+    .utility-sidebar { background: rgba(245, 245, 247, 0.6); border-radius: 24px; padding: 25px; border: 1px solid #eee; }
+    .utility-card { background: white; border-radius: 18px; padding: 15px; margin-bottom: 15px; border: 1px solid #f0f0f0; text-decoration: none; color: inherit; display: flex; align-items: center; gap: 15px; }
+    .btn-tool { padding: 12px 24px; border-radius: 14px; font-weight: 700; color: white; text-decoration: none; text-align: center; width: 100%; }
+    
+    .card-gold { background: var(--glass-gold); border: 1px solid rgba(255, 159, 10, 0.2); }
+    .card-green { background: var(--glass-green); border: 1px solid rgba(52, 199, 89, 0.2); }
+    .card-blue { background: var(--glass-blue); border: 1px solid rgba(0, 113, 227, 0.2); }
+    .card-purple { background: var(--glass-purple); border: 1px solid rgba(175, 82, 222, 0.2); }
+    .btn-gold { background: #ff9f0a; } .btn-green { background: #34c759; } .btn-purple { background: #af52de; } .btn-blue { background: var(--accent-blue); }
+
+    @media (min-width: 768px) {
+        .auth-nav { top: 20px; right: 20px; }
+        .hero-container { padding: 60px 5%; }
+        .welcome-text h1 { font-size: 3.5rem; }
+        .main-grid { grid-template-columns: 1.6fr 1fr; gap: 40px; }
+        .tool-row { flex-direction: row; align-items: center; gap: 20px; }
+        .btn-tool { width: auto; min-width: 140px; }
+        .feature-highlight { border-radius: 28px; }
+        .feature-highlight:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+    }
+
+    #broq-launcher { position: fixed; bottom: 20px; right: 20px; background: var(--broq-purple); color: white; padding: 10px 20px; border-radius: 50px; cursor: pointer; border: none; box-shadow: 0 10px 25px rgba(111, 66, 193, 0.35); z-index: 1000; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    
+    #broq-window { 
+        position: fixed; 
+        bottom: 80px; 
+        right: 20px; 
+        width: calc(100% - 40px);
+        max-width: 350px; 
+        height: 500px; 
+        background: white; 
+        border-radius: 24px; 
+        box-shadow: 0 15px 50px rgba(0,0,0,0.15); 
+        display: none; 
+        flex-direction: column; 
+        z-index: 1001; 
+        border: 1px solid rgba(0,0,0,0.05); 
+        overflow: hidden; 
+    }
+
+    .broq-body { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .msg { max-width: 88%; padding: 10px 14px; border-radius: 18px; font-size: 0.85rem; }
+    .msg-user { align-self: flex-end; background: var(--broq-purple); color: white; border-bottom-right-radius: 4px; }
+    .msg-bot { align-self: flex-start; background: #f2f2f7; color: var(--text-dark); border-bottom-left-radius: 4px; }
+</style>
+
+<!-- Floating Daily Journal Card -->
+<a href="/courses" class="journal-float">
+    <div class="journal-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+    </div>
+    <div class="journal-text">
+        <h6 class="mb-0 fw-bold" style="font-size: 0.9rem;">Daily Journal</h6>
+        <span class="text-muted small">Log Lectures</span>
+    </div>
+</a>
+
+<div class="hero-container">
+    <div class="auth-nav">
+        {% if session.get('user_name') %}
+        <div class="dropdown">
+            <a href="#" class="user-dropdown dropdown-toggle" data-bs-toggle="dropdown" id="userMenu">
+                <div style="width: 28px; height: 28px; background: rgba(255,255,255,0.2); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.3);">
+                    {{ session.get('user_name')[0].upper() }}
+                </div>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2" style="border-radius: 12px;">
+                <li class="dropdown-header small text-muted">Signed in as {{ session.get('user_name') }}</li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item rounded" href="/logout">Logout</a></li>
+            </ul>
+        </div>
+        {% else %}
+        <div class="dropdown">
+            <a href="#" class="user-dropdown dropdown-toggle" data-bs-toggle="dropdown" id="authMenu" style="padding: 10px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2" style="border-radius: 12px;">
+                <li><a class="dropdown-item rounded fw-bold" href="/login" style="color: var(--broq-purple);">Login</a></li>
+                <li><a class="dropdown-item rounded" href="/signup">Sign Up</a></li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="welcome-text">
+        <h1>
+            {% if session.get('user_name') %}
+            Hello, <span>{{ session.get('user_name') }}</span>
+            {% else %}
+            Welcome to <br><span>SmartStudy AI</span>
+            {% endif %}
+            <br>
+            <small class="fs-4 text-dark" style="font-weight: 400; display: block; margin-top: 10px;">Your All In One Tool</small>
+        </h1>
+    </div>
+
+    <div class="main-grid">
+        <div class="showcase-section">
+            <div class="tool-row">
+                <a href="/diagram" class="feature-highlight card-purple">
+                    <h5 class="fw-bold">AI Diagram Studio</h5>
+                    <p class="text-muted mb-0 small">Transform text or sketches into beautiful biological diagrams.</p>
+                </a>
+                <a href="/diagram" class="btn-tool btn-purple">Visualize</a>
+            </div>
+
+            <div class="tool-row">
+                <a href="/summarize" class="feature-highlight card-gold">
+                    <h5 class="fw-bold">Video Summarizer</h5>
+                    <p class="text-muted mb-0 small">Get notes from YouTube lectures instantly.</p>
+                </a>
+                <a href="/summarize" class="btn-tool btn-gold">Summarize</a>
+            </div>
+
+            <div class="tool-row">
+                <a href="/notes" class="feature-highlight card-green">
+                    <h5 class="fw-bold">Notes Q&A</h5>
+                    <p class="text-muted mb-0 small">Chat with your documents and PDF files.</p>
+                </a>
+                <a href="/notes" class="btn-tool btn-green">Ask AI</a>
+            </div>
+
+            <div class="tool-row">
+                <a href="/planner" class="feature-highlight card-blue">
+                    <h5 class="fw-bold">Study Planner</h5>
+                    <p class="text-muted mb-0 small">Create custom schedules for your exams.</p>
+                </a>
+                <a href="/planner" class="btn-tool btn-blue">Plan Now</a>
+            </div>
+        </div>
+        
+        <div class="utility-sidebar">
+            <h6 class="mb-3 fw-bold">Quick Utilities</h6>
+            <a href="/quiz" class="utility-card">
+                <div class="fs-5">📝</div>
+                <div><h6 class="mb-0">Quiz Generator</h6></div>
+            </a>
+            <a href="/images-to-pdf" class="utility-card">
+                <div class="fs-5">🖼️</div>
+                <div><h6 class="mb-0">Images to PDF</h6></div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<button id="broq-launcher" onclick="toggleBroq()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+    <span>Ask Broq</span>
+</button>
+
+<div id="broq-window">
+    <div class="broq-header p-3 d-flex justify-content-between align-items-center border-bottom">
+        <span class="fw-bold small">Broq AI Assistant</span>
+        <button onclick="toggleBroq()" style="background:none; border:none; font-size: 1.5rem; color: #ccc;">&times;</button>
+    </div>
+    <div class="broq-body" id="chat-history">
+        <div class="mb-3 mt-2 text-center" id="welcome-message">
+            <h6 class="fw-bold">Hi {% if session.get('user_name') %}{{ session.get('user_name') }}{% else %}there{% endif %}!</h6>
+            <p class="text-muted small">How can I help you today?</p>
+        </div>
+    </div>
+    <div class="broq-footer border-top p-2">
+        <form id="mini-chat-form" onsubmit="handleMiniChat(event)" class="px-2">
+            <div style="background: #f5f5f7; border-radius: 20px; padding: 8px 15px; display: flex;">
+                <input type="text" id="mini-user-input" placeholder="Type here..." autocomplete="off" style="background: transparent; border: none; outline: none; width: 100%; font-size: 0.9rem;">
+                <button type="submit" style="background:none; border:none; color: var(--broq-purple);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Flag to ensure the greeting only happens once per page load
+    let greetingSent = false;
+    const userName = "{{ session.get('user_name', '') }}";
+
+    function toggleBroq() {
+        const win = document.getElementById('broq-window');
+        const isOpening = win.style.display !== 'flex';
+        
+        win.style.display = isOpening ? 'flex' : 'none';
+
+        // Trigger personalized greeting if opening and user is logged in
+        if (isOpening && userName && !greetingSent) {
+            sendBotGreeting(`Hi ${userName}! I noticed you're logged in. How can I help you with your studies today?`);
+            greetingSent = true;
+        }
+    }
+
+    function sendBotGreeting(message) {
+        const history = document.getElementById('chat-history');
+        const welcome = document.getElementById('welcome-message');
+        
+        if (welcome) welcome.style.display = 'none';
+        
+        history.innerHTML += `<div class="msg msg-bot">${message}</div>`;
+        history.scrollTop = history.scrollHeight;
+    }
+
+    async function handleMiniChat(e) {
+        e.preventDefault();
+        const input = document.getElementById('mini-user-input');
+        const history = document.getElementById('chat-history');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const welcome = document.getElementById('welcome-message');
+        if (welcome) welcome.style.display = 'none';
+        
+        history.innerHTML += `<div class="msg msg-user">${text}</div>`;
+        input.value = '';
+        history.scrollTop = history.scrollHeight;
+
+        try {
+            const res = await fetch('/get_response', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+            
+            const data = await res.json();
+            history.innerHTML += `<div class="msg msg-bot">${data.response}</div>`;
+        } catch (err) {
+            console.error(err);
+            history.innerHTML += `<div class="msg msg-bot">Sorry, something went wrong.</div>`;
+        }
+        history.scrollTop = history.scrollHeight;
+    }
+</script>
+{% endblock %}

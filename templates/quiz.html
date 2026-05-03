@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --quiz-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --card-border: rgba(0, 0, 0, 0.05);
+    }
+
+    .quiz-container {
+        animation: slideIn 0.6s ease-out;
+        padding-bottom: 50px;
+    }
+
+    /* --- Hero Header --- */
+    .quiz-hero {
+        background: var(--quiz-gradient);
+        color: white;
+        border-radius: 24px;
+        padding: 40px;
+        margin-bottom: -50px; /* Overlap effect */
+        box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
+        position: relative;
+        z-index: 2;
+    }
+
+    /* --- Configuration Card --- */
+    .setup-card {
+        background: white;
+        border-radius: 24px;
+        padding: 60px 40px 40px;
+        border: 1px solid var(--card-border);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+        z-index: 1;
+    }
+
+    .form-control-custom {
+        border-radius: 12px;
+        padding: 12px 18px;
+        border: 2px solid #eef2f7;
+        transition: all 0.3s;
+    }
+
+    .form-control-custom:focus {
+        border-color: #764ba2;
+        box-shadow: 0 0 0 4px rgba(118, 75, 162, 0.1);
+    }
+
+    /* --- Quiz Output Styling --- */
+    .quiz-output-card {
+        background: #1e1e2e; /* Dark theme for questions to make them pop */
+        color: #cdd6f4;
+        border-radius: 20px;
+        padding: 30px;
+        font-family: 'Fira Code', 'Courier New', monospace;
+        border-left: 8px solid #fab387;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .quiz-output-card::before {
+        content: "LIVE_QUIZ_GEN";
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 10px;
+        opacity: 0.3;
+        letter-spacing: 2px;
+    }
+
+    .question-text {
+        white-space: pre-wrap;
+        line-height: 1.8;
+        font-size: 1rem;
+    }
+
+    /* --- Animations --- */
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .btn-quiz {
+        background: var(--quiz-gradient);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition: all 0.3s;
+    }
+
+    .btn-quiz:hover {
+        transform: scale(1.03);
+        box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+        color: white;
+    }
+</style>
+
+<div class="container quiz-container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            
+            <div class="quiz-hero text-center">
+                <h1 class="fw-black mb-1">Knowledge <span class="text-warning">Check</span></h1>
+                <p class="opacity-75">Challenge yourself with AI-generated assessments.</p>
+            </div>
+
+            <div class="setup-card mb-5">
+                <form method="POST" id="quizForm">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Topic / Subject</label>
+                            <input type="text" class="form-control form-control-custom" name="topic" 
+                                   placeholder="e.g. Zoology, Network Security, Botany..." required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Intensity</label>
+                            <select class="form-select form-control-custom" name="num">
+                                <option value="5">5 MCQs</option>
+                                <option value="10" selected>10 MCQs</option>
+                                <option value="15">15 MCQs</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-quiz btn-lg px-5 shadow" id="genBtn">
+                            START ASSESSMENT
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {% if quiz %}
+            <div class="mt-2" id="quizResult">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="fw-bold"><span class="text-primary">#</span> Topic: {{ topic }}</h4>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="window.print()">
+                        ⎙ Save as PDF
+                    </button>
+                </div>
+                
+                <div class="quiz-output-card shadow-lg">
+                    <div class="question-text">{{ quiz }}</div>
+                </div>
+
+                <div class="alert alert-info mt-4 border-0 rounded-4 shadow-sm">
+                    <div class="d-flex align-items-center">
+                        <span class="fs-3 me-3">🎯</span>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Ready to check?</h6>
+                            <small>The correct answers are provided at the end of the generation. No cheating!</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const quizForm = document.getElementById('quizForm');
+    const genBtn = document.getElementById('genBtn');
+
+    quizForm.addEventListener('submit', function() {
+        genBtn.innerHTML = '<span class="spinner-grow spinner-grow-sm"></span> ANALYZING TOPIC...';
+        genBtn.style.opacity = "0.7";
+        genBtn.disabled = true;
+    });
+</script>
+{% endblock %}

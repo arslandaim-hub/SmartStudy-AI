@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --msg-bg-receiver: #f1f3f4;
+        --msg-bg-sender: #d2e3fc;
+        --msg-text-sender: #174ea6;
+        --ios-glass: rgba(255, 255, 255, 0.45); 
+    }
+
+    /* --- Base Layout --- */
+    .chat-wrapper {
+        display: flex; height: 85vh; margin-top: 10px; background: #fff;
+        border-radius: 30px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+        position: relative;
+    }
+
+    .sidebar-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.3); z-index: 999; display: none; backdrop-filter: blur(5px); }
+    .history-sidebar {
+        width: 320px; height: calc(100% - 40px); margin: 20px; background: var(--ios-glass);
+        backdrop-filter: blur(35px); -webkit-backdrop-filter: blur(35px); border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 35px; transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+        position: absolute; left: 0; top: 0; z-index: 1000; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    }
+    .sidebar-hidden { transform: translateX(-120%) scale(0.95); opacity: 0; pointer-events: none; }
+
+    .chat-main { flex: 1; display: flex; flex-direction: column; background: #fff; width: 100%; }
+    .messages-container { flex-grow: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
+
+    .message { max-width: 75%; padding: 12px 18px; border-radius: 22px; font-size: 0.95rem; line-height: 1.4; animation: slideUp 0.3s ease-out; }
+    .received { align-self: flex-start; background: var(--msg-bg-receiver); border-bottom-left-radius: 5px; }
+    .sent { align-self: flex-end; background: var(--msg-bg-sender); color: var(--msg-text-sender); border-bottom-right-radius: 5px; }
+
+    /* Typing Indicator */
+    .typing-indicator {
+        display: none; align-self: flex-start; background: var(--msg-bg-receiver);
+        padding: 15px 20px; border-radius: 22px; border-bottom-left-radius: 5px; margin-bottom: 10px;
+    }
+    .dot {
+        height: 8px; width: 8px; background: #90949c; display: inline-block;
+        border-radius: 50%; opacity: 0.4; margin-right: 4px;
+        animation: dotJump 1.4s infinite ease-in-out;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; margin-right: 0; }
+
+    @keyframes dotJump {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1.0); opacity: 1; }
+    }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* --- Input Area with Upload --- */
+    .input-area { padding: 20px; background: #fff; }
+    .input-group-custom { 
+        background: #f1f3f4; 
+        border-radius: 35px; 
+        padding: 6px 12px; 
+        display: flex; 
+        align-items: center; 
+        transition: all 0.3s; 
+        flex-wrap: nowrap; /* Prevent items from wrapping to new lines */
+    }
+    .input-group-custom:focus-within { background: #e8eaed; box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1); }
+    .input-group-custom input[type="text"] { border: none; background: transparent; padding: 10px; flex: 1; outline: none; min-width: 50px; }
+    
+    .upload-btn { background: transparent; border: none; font-size: 1.2rem; cursor: pointer; padding: 0 8px; color: #5f6368; flex-shrink: 0; }
+    .upload-btn:hover { color: #1a73e8; }
+    
+    .send-btn-circle { 
+        background: #1a73e8; 
+        color: white; 
+        border: none; 
+        width: 42px; 
+        height: 42px; 
+        min-width: 42px; /* Fixed width to prevent shrinking on mobile */
+        border-radius: 50%; 
+        cursor: pointer; 
+        transition: 0.3s; 
+        flex-shrink: 0; /* Ensures button stays circular */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .send-btn-circle:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* Preview Thumbnail */
+    #imagePreview { max-height: 35px; max-width: 35px; border-radius: 8px; display: none; margin-right: 8px; border: 1px solid #ddd; object-fit: cover; flex-shrink: 0; }
+</style>
+
+<div class="chat-wrapper">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="history-sidebar sidebar-hidden" id="sidebar">
+        <div class="history-header p-4 d-flex justify-content-between align-items-center">
+            <span class="fw-bold fs-4">History</span>
+            <button class="btn btn-light rounded-circle shadow-sm" id="closeSidebar">✕</button>
+        </div>
+        <div class="history-list p-3">
+            <div class="history-item border rounded-4 p-3 mb-2 bg-white shadow-sm">📅 Study Plan - Week 12</div>
+            <div class="history-item border rounded-4 p-3 mb-2 bg-white shadow-sm">📝 ML Notes Summary</div>
+        </div>
+    </aside>
+
+    <main class="chat-main">
+        <div class="chat-header d-flex align-items-center p-3 border-bottom bg-white">
+            <button id="openSidebarBtn" class="btn btn-link text-dark fs-4">☰</button>
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 42px; height: 42px;">B</div>
+            <div class="ms-3">
+                <h6 class="mb-0 fw-bold">Broq</h6>
+                <small id="status" class="text-success">● Active</small>
+            </div>
+        </div>
+
+        <div class="messages-container" id="chatBox">
+            <div class="message received shadow-sm">
+                Hi! I'm <b>Broq</b>. Upload a diagram or text to start studying.
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="loadingIndicator">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+
+        <div class="input-area">
+            <form id="chatForm" class="input-group-custom" enctype="multipart/form-data">
+                <!-- Hidden File Input -->
+                <input type="file" id="imageInput" accept="image/*" style="display:none">
+                <button type="button" class="upload-btn" onclick="document.getElementById('imageInput').click()" title="Upload Image">📎</button>
+                
+                <img id="imagePreview" src="">
+                
+                <input type="text" placeholder="Message Broq..." id="userInput" autocomplete="off">
+                <button type="submit" class="send-btn-circle" id="sendBtn">➤</button>
+            </form>
+        </div>
+    </main>
+</div>
+
+<script>
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const openBtn = document.getElementById('openSidebarBtn');
+    const closeBtn = document.getElementById('closeSidebar');
+    const chatForm = document.getElementById('chatForm');
+    const userInput = document.getElementById('userInput');
+    const imageInput = document.getElementById('imageInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const chatBox = document.getElementById('chatBox');
+    const loading = document.getElementById('loadingIndicator');
+    const sendBtn = document.getElementById('sendBtn');
+    const statusText = document.getElementById('status');
+
+    // Handle Sidebar
+    function showSidebar() { sidebar.classList.remove('sidebar-hidden'); overlay.style.display = 'block'; }
+    function hideSidebar() { sidebar.classList.add('sidebar-hidden'); overlay.style.display = 'none'; }
+    openBtn.addEventListener('click', showSidebar);
+    closeBtn.addEventListener('click', hideSidebar);
+    overlay.addEventListener('click', hideSidebar);
+
+    // Show Image Preview
+    imageInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const messageText = userInput.value.trim();
+        const imageFile = imageInput.files[0];
+
+        if (messageText !== "" || imageFile) {
+            let displayMsg = messageText;
+            if (imageFile) displayMsg = "🖼️ (Image attached) " + messageText;
+            
+            appendMessage(displayMsg, 'sent');
+            
+            // Prepare FormData for Multipart/Form-Data (handles images)
+            const formData = new FormData();
+            formData.append('message', messageText);
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+
+            // Reset Inputs
+            userInput.value = "";
+            imageInput.value = "";
+            imagePreview.style.display = 'none';
+            
+            // UI State
+            loading.style.display = 'block';
+            chatBox.scrollTop = chatBox.scrollHeight;
+            sendBtn.disabled = true;
+            statusText.innerText = "● Thinking...";
+            statusText.className = "text-warning";
+
+            // CALL /get_response INSTEAD OF /chat (get_response is vision-aware)
+            fetch('/get_response', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                loading.style.display = 'none';
+                appendMessage(data.response, 'received'); // Use data.response to match your latest app.py logic
+            })
+            .catch(() => {
+                loading.style.display = 'none';
+                appendMessage("Ollama vision error. Ensure 'llava' is installed.", "received");
+            })
+            .finally(() => {
+                sendBtn.disabled = false;
+                statusText.innerText = "● Active";
+                statusText.className = "text-success";
+            });
+        }
+    });
+
+    function appendMessage(text, side) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${side} shadow-sm`;
+        msgDiv.innerText = text;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
+{% endblock %}

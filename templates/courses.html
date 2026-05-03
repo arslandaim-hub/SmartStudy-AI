@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Daily Journal - SmartStudy AI{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --apple-blue: #0071e3;
+        --apple-gray: #f5f5f7;
+        --apple-dark: #1d1d1f;
+        --folder-accent: #6f42c1;
+    }
+
+    body {
+        background-color: #fbfbfd;
+    }
+
+    .back-link {
+        color: var(--apple-blue);
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .back-link:hover {
+        transform: translateX(-3px);
+        opacity: 0.8;
+    }
+
+    .glass-header {
+        background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.4));
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 28px;
+        padding: 40px;
+        margin-bottom: 40px;
+    }
+
+    .subject-card {
+        background: white;
+        border: 1px solid rgba(0,0,0,0.05) !important;
+        border-radius: 24px !important;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .subject-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.06) !important;
+        border-color: rgba(111, 66, 193, 0.2) !important;
+    }
+
+    .folder-icon {
+        width: 70px;
+        height: 70px;
+        background: rgba(111, 66, 193, 0.1);
+        color: var(--folder-accent);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 1.8rem;
+        transition: 0.3s;
+    }
+
+    .subject-card:hover .folder-icon {
+        background: var(--folder-accent);
+        color: white;
+    }
+
+    .create-input {
+        background: white !important;
+        border: 1px solid #d2d2d7 !important;
+        border-radius: 14px !important;
+        padding: 12px 20px !important;
+        font-size: 1rem;
+    }
+
+    .create-input:focus {
+        border-color: var(--apple-blue) !important;
+        box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1) !important;
+    }
+
+    .btn-create {
+        background: var(--apple-blue);
+        border-radius: 14px !important;
+        padding: 12px 25px;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+
+    .btn-create:hover {
+        background: #0077ed;
+        transform: scale(1.02);
+    }
+
+    .dropdown-menu {
+        border-radius: 16px !important;
+        border: none !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+        padding: 8px;
+    }
+
+    .dropdown-item {
+        border-radius: 10px;
+        padding: 8px 16px;
+    }
+</style>
+
+<div class="container py-5">
+    <!-- Navigation Area -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <a href="{{ url_for('index') }}" class="back-link text-decoration-none fw-bold">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Dashboard
+        </a>
+        <span class="badge rounded-pill bg-light text-dark border px-3 py-2">
+            <i class="far fa-calendar-alt me-2"></i> University Compendium
+        </span>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-xl-11">
+            <!-- Header & Subject Creation -->
+            <div class="glass-header text-center">
+                <h1 class="display-5 fw-bold mb-2" style="color: var(--apple-dark); letter-spacing: -1px;">Daily Journal</h1>
+                <p class="text-muted mb-4 fs-5">Log your university lectures and let AI build your study kits.</p>
+                
+                <div class="row justify-content-center">
+                    <div class="col-lg-7">
+                        <form method="POST" class="d-flex gap-2">
+                            <input type="text" name="subject_name" class="form-control create-input" 
+                                   placeholder="Enter subject (e.g. AI, Organic Chemistry)" required>
+                            <button type="submit" class="btn btn-primary btn-create">
+                                <i class="fas fa-plus me-2"></i>Create Folder
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subjects Section -->
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h3 class="fw-bold m-0" style="color: var(--apple-dark);">My Subjects</h3>
+                <div class="text-muted small">{{ subjects|length }} Categories</div>
+            </div>
+
+            <div class="row g-4">
+                {% for subject in subjects %}
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="card h-100 border-0 shadow-sm subject-card position-relative">
+                        <!-- Options Dropdown -->
+                        <div class="dropdown position-absolute" style="top: 15px; right: 15px; z-index: 5;">
+                            <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#renameModal{{ subject.id }}">
+                                        <i class="far fa-edit me-2"></i> Rename
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button class="dropdown-item text-danger" 
+                                            onclick="confirmDeleteSubject('{{ url_for('delete_subject', subject_id=subject.id) }}', '{{ subject.name|replace('\'', '\\\'') }}')">
+                                        <i class="far fa-trash-alt me-2"></i> Delete
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <a href="{{ url_for('view_subject', subject_id=subject.id) }}" class="text-decoration-none">
+                            <div class="card-body p-4 text-center">
+                                <div class="folder-icon">
+                                    <i class="fas fa-folder"></i>
+                                </div>
+                                <h5 class="fw-bold text-dark mb-1">{{ subject.name }}</h5>
+                                <p class="text-muted small mb-0">
+                                    <span class="badge rounded-pill bg-light text-secondary border">
+                                        {{ subject.lectures|length }} Lectures
+                                    </span>
+                                </p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Rename Modal -->
+                <div class="modal fade" id="renameModal{{ subject.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow" style="border-radius: 24px;">
+                            <div class="modal-header border-0 pt-4 px-4">
+                                <h5 class="fw-bold m-0">Rename Subject</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form action="{{ url_for('rename_subject', subject_id=subject.id) }}" method="POST">
+                                <div class="modal-body px-4">
+                                    <label class="small text-muted mb-2">New Name</label>
+                                    <input type="text" name="new_name" class="form-control create-input" value="{{ subject.name }}" required>
+                                </div>
+                                <div class="modal-footer border-0 pb-4 px-4">
+                                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary btn-create px-4">Update Name</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Empty State -->
+                <div class="col-12 text-center py-5">
+                    <div class="opacity-25 mb-3">
+                        <i class="fas fa-folder-open fa-5x"></i>
+                    </div>
+                    <h5 class="text-muted">No subjects found</h5>
+                    <p class="text-muted small">Create your first subject folder above to get started.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Global Subject Delete Modal -->
+<div class="modal fade" id="deleteSubjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 24px;">
+            <div class="modal-body p-5 text-center">
+                <div class="mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle" style="width: 80px; height: 80px;">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+                <h4 class="fw-bold">Delete Subject?</h4>
+                <p class="text-muted">Are you sure you want to delete <span id="deleteSubjectName" class="fw-bold text-dark"></span>? This will permanently erase all lectures and study materials inside.</p>
+                <div class="d-grid gap-2 mt-4">
+                    <a id="confirmDeleteSubjectBtn" href="#" class="btn btn-danger btn-lg rounded-pill fw-bold">Delete Permanently</a>
+                    <button type="button" class="btn btn-light btn-lg rounded-pill fw-bold" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDeleteSubject(deleteUrl, subjectName) {
+    document.getElementById('deleteSubjectName').innerText = subjectName;
+    document.getElementById('confirmDeleteSubjectBtn').setAttribute('href', deleteUrl);
+    const myModal = new bootstrap.Modal(document.getElementById('deleteSubjectModal'));
+    myModal.show();
+}
+</script>
+
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}

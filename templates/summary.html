@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --msg-bg-receiver: #f1f3f4;
+        --msg-bg-sender: #d2e3fc;
+        --msg-text-sender: #174ea6;
+        --accent-color: #ff9f0a;
+    }
+
+    /* --- Container Adjustments --- */
+    .split-container {
+        display: flex;
+        flex-direction: column; /* Mobile Default */
+        gap: 20px;
+        padding: 15px;
+        min-height: 100vh;
+        margin-top: 10px;
+    }
+
+    .summarizer-column {
+        flex: 1.5;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    /* --- Chatbot Column --- */
+    .chatbot-column {
+        flex: 1;
+        background: #fff;
+        border-radius: 24px;
+        display: flex;
+        flex-direction: column;
+        height: 60vh; 
+        box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+        border: 1px solid #eee;
+        overflow: hidden;
+    }
+
+    /* --- Search Section & Fixed Input Group --- */
+    .search-section {
+        background: #ffffff;
+        border: 1px solid #eee;
+        border-radius: 20px;
+        padding: 20px;
+    }
+
+    .modern-input-group {
+        background: #f8f9fa;
+        border-radius: 20px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column; /* Default: Stacked for Mobile */
+        gap: 12px;
+        border: 1px solid #ddd;
+        align-items: stretch;
+    }
+
+    .modern-input-group input { 
+        border: none; 
+        background: transparent; 
+        outline: none; 
+        padding: 10px 15px;
+        font-size: 1rem; 
+        width: 100%;
+    }
+
+    /* --- Summary Box --- */
+    .result-container {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px solid #e0e0e0;
+        overflow: hidden;
+    }
+
+    .summary-pane { padding: 20px; }
+    .summary-content { font-size: 1rem; line-height: 1.6; color: #444; }
+
+    /* --- Messages --- */
+    .messages-container { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #fafafa; }
+    .message { max-width: 90%; padding: 10px 15px; border-radius: 18px; font-size: 0.9rem; }
+    .received { align-self: flex-start; background: var(--msg-bg-receiver); border-bottom-left-radius: 4px; }
+    .sent { align-self: flex-end; background: var(--msg-bg-sender); color: var(--msg-text-sender); border-bottom-right-radius: 4px; }
+
+    .input-area { padding: 12px; background: #fff; border-top: 1px solid #eee; }
+    .input-group-custom { background: #f1f3f4; border-radius: 25px; padding: 5px 10px; display: flex; align-items: center; }
+    .input-group-custom input { border: none; background: transparent; padding: 8px; flex: 1; outline: none; font-size: 0.9rem; }
+    
+    #loadingOverlay { display: none; text-align: center; margin-top: 10px; }
+    .spinner-apple { width: 25px; height: 25px; border: 3px solid #eee; border-top: 3px solid #ff9f0a; border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* --- Tablet & Desktop Responsive Fixes --- */
+    @media (min-width: 992px) {
+        .split-container { flex-direction: row; padding: 30px; gap: 30px; align-items: flex-start; }
+        .chatbot-column { height: 85vh; position: sticky; top: 20px; }
+        
+        /* Fixed Desktop Alignment for Button and Input */
+        .modern-input-group { 
+            flex-direction: row; 
+            border-radius: 50px; 
+            padding: 6px 6px 6px 20px; 
+            align-items: center; 
+        }
+        .modern-input-group input { flex: 1; }
+        .modern-input-group .btn { white-space: nowrap; }
+
+        .summary-pane { padding: 35px; }
+        .message { max-width: 85%; }
+    }
+</style>
+
+<div class="split-container">
+    
+    <!-- LEFT SIDE: VIDEO & SUMMARY -->
+    <div class="summarizer-column">
+        <div class="search-section">
+            <h5 class="fw-bold mb-3">AI Video Summarizer</h5>
+            <form method="POST" onsubmit="showLoading()">
+                <div class="modern-input-group">
+                    <input type="text" name="video_url" placeholder="Paste YouTube link here..." required>
+                    <button class="btn btn-dark rounded-pill px-4 py-2" type="submit">Summarize</button>
+                </div>
+            </form>
+            <div id="loadingOverlay">
+                <div class="spinner-apple mb-2"></div>
+                <small class="text-muted d-block">Analyzing video transcript...</small>
+            </div>
+        </div>
+
+        {% if summary %}
+        <div class="result-container">
+            <div class="ratio ratio-16x9 bg-black">
+                <iframe src="https://www.youtube.com/embed/{{ video_id }}" allowfullscreen></iframe>
+            </div>
+
+            <div class="summary-pane">
+                <div style="border-bottom: 2px solid var(--accent-color); display: inline-block; margin-bottom: 15px;">
+                    <h6 class="fw-bold m-0 pb-1">STUDY NOTES</h6>
+                </div>
+                <div id="summaryText" class="summary-content">
+                    {{ summary | safe }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- RIGHT SIDE: CHATBOT -->
+    <div class="chatbot-column">
+        <div class="chat-header p-3 border-bottom d-flex align-items-center gap-2 bg-white">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 35px; height: 35px;">B</div>
+            <div>
+                <h6 class="mb-0 fw-bold" style="font-size: 0.9rem;">Broq AI</h6>
+                <small style="color: #34c759; font-size: 0.75rem;">● Ready to discuss</small>
+            </div>
+        </div>
+
+        <div class="messages-container" id="chatBox">
+            <div class="message received">
+                I can explain parts of the video in more detail. Just ask!
+            </div>
+        </div>
+
+        <div class="input-area">
+            <form id="chatForm" class="input-group-custom">
+                <input type="text" placeholder="Ask a question..." id="userInput" autocomplete="off">
+                <button type="submit" class="btn btn-primary rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatBox = document.getElementById('chatBox');
+    const chatForm = document.getElementById('chatForm');
+    const userInput = document.getElementById('userInput');
+    let currentSummaryContext = ""; 
+
+    function showLoading() {
+        document.getElementById('loadingOverlay').style.display = 'block';
+    }
+
+    function appendMessage(text, side) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${side}`;
+        msgDiv.innerText = text;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    window.onload = function() {
+        const summaryElement = document.getElementById('summaryText');
+        if (summaryElement) {
+            currentSummaryContext = summaryElement.innerText;
+            appendMessage("Summary loaded. How can I help you understand this better?", "received");
+        }
+    };
+
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        appendMessage(text, 'sent');
+        userInput.value = "";
+        
+        const fullPrompt = currentSummaryContext 
+            ? `Context: ${currentSummaryContext}\n\nQuestion: ${text}`
+            : text;
+
+        fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: fullPrompt })
+        })
+        .then(res => res.json())
+        .then(data => {
+            appendMessage(data.response, 'received');
+        })
+        .catch(() => {
+            appendMessage("Error: Could not reach the server.", "received");
+        });
+    });
+</script>
+{% endblock %}

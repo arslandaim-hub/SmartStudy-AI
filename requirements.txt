@@ -1,0 +1,11 @@
+Flask
+gunicorn
+Flask-SQLAlchemy
+requests
+python-dotenv
+img2pdf
+PyPDF2
+yt-dlp
+faster-whisper
+python-pptx
+chromadb

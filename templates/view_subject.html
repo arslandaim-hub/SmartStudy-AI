@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}{{ subject.name }} - Journal{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --apple-blue: #0071e3;
+        --broq-purple: #6f42c1;
+    }
+
+    /* Improved Input Visibility */
+    .form-input-custom {
+        background-color: #ffffff !important;
+        border: 2px solid #e2e2e7 !important;
+        border-radius: 12px !important;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+
+    .form-input-custom:focus {
+        border-color: var(--apple-blue) !important;
+        box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1) !important;
+        background-color: #fff !important;
+    }
+
+    /* Highlighted Topic Name */
+    .topic-highlight {
+        color: var(--broq-purple) !important;
+        font-weight: 800;
+    }
+
+    .transition-arrow {
+        transition: transform 0.3s ease;
+    }
+    [aria-expanded="true"] .transition-arrow {
+        transform: rotate(90deg);
+    }
+    .border-dashed {
+        border-style: dashed !important;
+    }
+    .rounded-circle {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Loading Overlay Styles */
+    #loadingOverlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(5px);
+        z-index: 9999;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .loader-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid var(--broq-purple);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay">
+    <div class="loader-spinner mb-3"></div>
+    <h5 class="fw-bold">SmartStudy AI is thinking...</h5>
+    <p class="text-muted">Generating your study kit, please wait.</p>
+</div>
+
+<div class="container py-4">
+    <div class="mb-4">
+        <a href="{{ url_for('courses') }}" class="text-decoration-none text-primary fw-bold">← Back to Subjects</a>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar: Log New Work -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm sticky-top" style="border-radius: 20px; top: 100px;">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">Log Today's Lecture</h5>
+                    <form method="POST" id="lectureForm">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Main Topic</label>
+                            <input type="text" name="topic" class="form-control form-input-custom" placeholder="e.g., Mitosis" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">What was taught? (Sub-topics)</label>
+                            <textarea name="sub_topics" class="form-control form-input-custom" rows="5" 
+                                      placeholder="Paste notes or list sub-topics taught today..." required></textarea>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="action" value="save" class="btn btn-outline-dark py-2 fw-bold" style="border-radius: 12px;">
+                                Just Save Notes
+                            </button>
+                            <button type="submit" name="action" value="save_gen" onclick="showLoading()" class="btn btn-dark py-2 fw-bold" style="border-radius: 12px;">
+                                Save & Generate AI Kit
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content: Lecture Timeline -->
+        <div class="col-lg-8">
+            <h3 class="fw-bold mb-4">{{ subject.name }} Timeline</h3>
+            
+            {% for lecture in subject.lectures|sort(attribute='date_added', reverse=True) %}
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-link text-decoration-none p-0 me-3 shadow-none" 
+                                    type="button" 
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target="#content{{ lecture.id }}" 
+                                    aria-expanded="false">
+                                <i class="fas fa-chevron-right text-muted transition-arrow"></i>
+                            </button>
+                            <div>
+                                <h5 class="topic-highlight mb-1">{{ lecture.topic }}</h5>
+                                <span class="text-muted small">{{ lecture.date_added.strftime('%d %b, %Y') }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2 align-items-center">
+                            <a href="{{ url_for('generate_kit', lecture_id=lecture.id) }}" onclick="showLoading()" class="btn btn-sm {% if lecture.ai_concepts %}btn-outline-secondary{% else %}btn-primary{% endif %} rounded-pill px-3 fw-bold">
+                                {% if lecture.ai_concepts %}🔄 Re-generate{% else %}Generate{% endif %}
+                            </a>
+
+                            <button class="btn btn-sm btn-outline-danger rounded-circle" 
+                                    onclick="confirmDelete('{{ url_for('delete_lecture', lecture_id=lecture.id) }}')"
+                                    title="Delete Topic">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="collapse" id="content{{ lecture.id }}">
+                    <div class="card-body px-4 pb-4">
+                        <hr class="text-muted opacity-25">
+                        
+                        {% if lecture.ai_concepts %}
+                            <h6 class="fw-bold mt-3">📋 Core Concepts (AI Generated)</h6>
+                            <div class="p-3 bg-light rounded-3 mb-3" style="white-space: pre-line; font-size: 0.95rem;">
+                                {{ lecture.ai_concepts }}
+                            </div>
+
+                            <div class="accordion border-0" id="accordionQuiz{{ lecture.id }}">
+                                <div class="accordion-item border-0">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed fw-bold text-success bg-white px-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#quiz{{ lecture.id }}">
+                                            📝 Self-Test MCQs
+                                        </button>
+                                    </h2>
+                                    <div id="quiz{{ lecture.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionQuiz{{ lecture.id }}">
+                                        <div class="accordion-body bg-light rounded-3 mt-2" style="white-space: pre-line;">
+                                            {{ lecture.ai_quiz }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-3 border rounded-3 border-dashed">
+                                <p class="text-muted small mb-0">No AI study kit generated for this topic yet.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-5 bg-white rounded-4 shadow-sm">
+                <p class="text-muted">No lectures logged yet. Use the form on the left to start your journal.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <i class="fas fa-exclamation-circle text-danger fa-3x"></i>
+                </div>
+                <h5 class="fw-bold">Delete Topic?</h5>
+                <p class="text-muted">This will permanently remove this lecture and all AI-generated content.</p>
+                <div class="d-flex gap-2 justify-content-center mt-4">
+                    <button type="button" class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal" style="border-radius: 12px;">Cancel</button>
+                    <a id="confirmDeleteBtn" href="#" class="btn btn-danger px-4 fw-bold" style="border-radius: 12px;">Delete Topic</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show loading screen
+function showLoading() {
+    // Only show if the form is valid (to prevent overlay appearing on empty required fields)
+    const form = document.getElementById('lectureForm');
+    if (form.checkValidity()) {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+}
+
+function confirmDelete(deleteUrl) {
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    confirmBtn.setAttribute('href', deleteUrl);
+    const myModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    myModal.show();
+}
+</script>
+
+{% endblock %}

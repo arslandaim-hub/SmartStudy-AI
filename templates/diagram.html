@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- html2canvas for PNG export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ 
+        startOnLoad: true, 
+        theme: 'base',
+        themeVariables: {
+            primaryColor: '#6f42c1',
+            primaryTextColor: '#fff',
+            primaryBorderColor: '#5a32a3',
+            lineColor: '#af52de',
+            secondaryColor: '#0071e3',
+            tertiaryColor: '#f5f5f7'
+        },
+        securityLevel: 'loose',
+        fontFamily: 'Inter, system-ui, sans-serif'
+    });
+    window.mermaid = mermaid;
+</script>
+
+<style>
+    :root {
+        --deep-purple: #6f42c1;
+        --electric-purple: #af52de;
+        --soft-teal: #e0f7fa;
+    }
+
+    body { 
+        background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%); 
+        min-height: 100vh;
+    }
+
+    .studio-header { padding: 50px 0 30px; }
+    .gradient-text {
+        background: linear-gradient(90deg, var(--deep-purple), var(--electric-purple), #0071e3);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+    }
+
+    .diagram-card { 
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 32px; 
+        padding: 35px; 
+        border: 2px solid #fff;
+        box-shadow: 0 15px 35px rgba(111, 66, 193, 0.1);
+        height: 100%;
+    }
+
+    .mode-switcher {
+        background: #f0f0f5;
+        padding: 6px;
+        border-radius: 20px;
+        display: inline-flex;
+        border: 1px solid #dcdce2;
+    }
+
+    .mode-btn { 
+        border-radius: 16px; padding: 10px 24px; font-weight: 700; border: none; background: transparent; color: #636366; transition: 0.3s;
+    }
+
+    .mode-btn.active { 
+        background: var(--deep-purple); color: white; box-shadow: 0 10px 20px rgba(111, 66, 193, 0.3);
+    }
+
+    /* Canvas with Export Overlay */
+    .canvas-container { position: relative; }
+    
+    .canvas-area { 
+        min-height: 550px; 
+        background: #ffffff;
+        border-radius: 24px; 
+        border: 3px solid #f0f0f5;
+        display: flex; align-items: center; justify-content: center; overflow: auto;
+    }
+
+    /* Floating Export Button */
+    .export-tools {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: none; /* Hidden until diagram exists */
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        padding: 8px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .btn-download {
+        background: var(--deep-purple);
+        color: white;
+        border: none;
+        padding: 8px 18px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-download:hover { background: var(--electric-purple); color: white; }
+
+    .canvas-placeholder {
+        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+        border-radius: 20px; padding: 40px; color: white;
+    }
+
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .btn-generate { 
+        background: linear-gradient(135deg, var(--deep-purple), var(--electric-purple)); 
+        color: white; border-radius: 18px; padding: 14px; font-weight: 800; border: none;
+    }
+    
+    .spinner-studio { width: 60px; height: 60px; border: 6px solid rgba(111,66,193,0.1); border-top: 6px solid var(--deep-purple); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+
+<div class="container studio-header">
+    <div class="row align-items-center">
+        <div class="col-md-7">
+            <h1 class="gradient-text display-4 mb-2">Diagram Studio</h1>
+            <p class="text-muted fw-500 fs-5">Digitize your scientific concepts.</p>
+        </div>
+        <div class="col-md-5 text-md-end">
+            <div class="mode-switcher">
+                <button class="mode-btn active" id="btn-text" onclick="switchMode('text')">Magic Text</button>
+                <button class="mode-btn" id="btn-sketch" onclick="switchMode('sketch')">Sketch AI</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="diagram-card">
+                <div id="text-input-area">
+                    <h5 class="fw-bold mb-3" style="color: var(--deep-purple);">Knowledge Input</h5>
+                    <textarea id="diagPrompt" class="form-control mb-4" rows="10" placeholder="e.g., Explain the lifecycle of a Mango tree..."></textarea>
+                    <button class="btn btn-generate w-100" onclick="generateFromText()">Create Visual Magic</button>
+                </div>
+
+                <div id="sketch-input-area" style="display: none;">
+                    <h5 class="fw-bold mb-3 text-success">Vision Input</h5>
+                    <input type="file" id="sketchFile" class="form-control mb-4" accept="image/*">
+                    <button class="btn btn-success w-100 btn-generate" style="background: #34c759;" onclick="generateFromSketch()">Digitize Sketch</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="diagram-card p-2 canvas-container">
+                <!-- Floating Download Tool -->
+                <div class="export-tools" id="exportTools">
+                    <button class="btn-download" onclick="downloadDiagram()">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
+                        Download PNG
+                    </button>
+                </div>
+
+                <div class="canvas-area" id="renderZone">
+                    <div class="canvas-placeholder text-center mx-4" id="placeholderMsg">
+                        <h4 class="fw-bold mb-2">Ready to Visualize?</h4>
+                        <p class="mb-0 opacity-90">Enter your description to see the diagram appear here.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchMode(mode) {
+        const isText = mode === 'text';
+        document.getElementById('btn-text').classList.toggle('active', isText);
+        document.getElementById('btn-sketch').classList.toggle('active', !isText);
+        document.getElementById('text-input-area').style.display = isText ? 'block' : 'none';
+        document.getElementById('sketch-input-area').style.display = !isText ? 'block' : 'none';
+    }
+
+    function showLoading(message) {
+        document.getElementById('exportTools').style.display = 'none';
+        const zone = document.getElementById('renderZone');
+        zone.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-studio mx-auto mb-4"></div>
+                <h5 class="fw-bold" style="color: var(--deep-purple)">AI IS ARCHITECTING...</h5>
+                <p class="text-muted">${message}</p>
+            </div>
+        `;
+    }
+
+    async function generateFromText() {
+        const prompt = document.getElementById('diagPrompt').value.trim();
+        if (!prompt) return;
+        showLoading("Structuring concepts...");
+        try {
+            const res = await fetch('/diagram-ai', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ prompt: prompt })
+            });
+            const data = await res.json();
+            renderMermaid(data.code);
+        } catch (err) {
+            document.getElementById('renderZone').innerHTML = `<p class="text-danger">Connection Error.</p>`;
+        }
+    }
+
+    async function generateFromSketch() {
+        const fileInput = document.getElementById('sketchFile');
+        if (fileInput.files.length === 0) return;
+        showLoading("Analyzing vision...");
+        const formData = new FormData();
+        formData.append('sketch', fileInput.files[0]);
+        try {
+            const res = await fetch('/diagram-sketch', { method: 'POST', body: formData });
+            const data = await res.json();
+            renderMermaid(data.code);
+        } catch (err) {
+            document.getElementById('renderZone').innerHTML = `<p class="text-danger">Analysis failed.</p>`;
+        }
+    }
+
+    async function renderMermaid(code) {
+        const zone = document.getElementById('renderZone');
+        let cleanCode = code.replace(/```mermaid/g, '').replace(/```/g, '').trim();
+        const renderId = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+        
+        zone.innerHTML = `<div id="captureArea" style="background:white; padding:20px;"><div class="mermaid" id="${renderId}">${cleanCode}</div></div>`;
+        
+        try {
+            await window.mermaid.run();
+            document.getElementById('exportTools').style.display = 'block';
+        } catch (e) {
+            zone.innerHTML = `<p class="text-danger">Syntax Error in AI Output.</p>`;
+        }
+    }
+
+    // DOWNLOAD FUNCTION
+    async function downloadDiagram() {
+        const element = document.getElementById('captureArea');
+        const btn = document.querySelector('.btn-download');
+        btn.innerHTML = "Processing...";
+        
+        try {
+            const canvas = await html2canvas(element, {
+                backgroundColor: "#ffffff",
+                scale: 2 // High resolution
+            });
+            
+            const link = document.createElement('a');
+            link.download = 'SmartStudy-Diagram.png';
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        } catch (error) {
+            alert("Download failed. Please try again.");
+        } finally {
+            btn.innerHTML = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg> Download PNG`;
+        }
+    }
+</script>
+{% endblock %}
