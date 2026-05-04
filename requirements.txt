@@ -1,11 +1,9 @@
 Flask
-gunicorn
 Flask-SQLAlchemy
-requests
-python-dotenv
+google-generativeai
 img2pdf
 PyPDF2
-yt-dlp
-faster-whisper
 python-pptx
-chromadb
+Pillow
+python-dotenv
+requests
