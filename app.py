@@ -68,7 +68,7 @@ os.makedirs("uploads", exist_ok=True)
 # ==================== CORE LLM FUNCTION (GEMINI) ====================
 
 # Replace with your Groq API Key
-client = Groq(api_key="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")
+client = Groq(api_key="Upload your own")
 
 def ask_local_llm(prompt, model_type="fast", image_data=None):
     try:
