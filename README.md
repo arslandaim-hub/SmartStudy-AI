@@ -10,11 +10,11 @@
 📅-Study Planner – Organize your study schedule and stay on track.
 📊-Progress Tracking – Monitor your learning progress and identify areas for improvements.
 ## Screenshots:
-<img src= ""
+<img src= "Images/WhatsApp Image 2026-07-05 at 4.22.00 PM.jpeg"
 width="130">
-<img src= ""
+<img src= "Images/WhatsApp Image 2026-07-05 at 4.21.59 PM (1).jpeg"
 width="130">
-<img src= ""
+<img src= "Images/WhatsApp Image 2026-07-05 at 4.21.59 PM.jpeg"
 width="130">
-<img src= ""
-width="130">
+
+You can check out the SmartStudy AI website here: arsi77pythonanywhere.com
